@@ -165,16 +165,83 @@ module.exports = class PetController {
         res.status(422).json({ message: requiredFields[field] });
         return;
       }
-      updatedData[field] = [field]
+      updatedData[field] = [field];
     }
     if (images.length == 0) {
       res.status(422).json({ message: "A imagem é obrigatório" });
       return;
-    }else{
-      updatedData.images = []
-        images.map((imgaes)=>{
-          updatedData.images.push(image.filename)
-        })
+    } else {
+      updatedData.images = [];
+      images.map((image) => {
+        updatedData.images.push(image.filename);
+      });
+    }
+
+    await Pet.findByIdAndUpdate(id, updatedData);
+    res.status(200).json({ message: "Atualizado com sucesso" });
+  }
+
+  static async schedule(req, res) {
+    const id = req.params.id;
+
+    // check if pets exist
+
+    const pet = await Pet.findById(id);
+
+    if (!pet) {
+      res.status(404).json({ message: "Pet não existe" });
+    }
+
+    //checl if user registered the pet
+    const token = getToken(req);
+    const user = await getUserByToken(token);
+    if (pet.user._id.equals(user._id)) {
+      res.status(404).json({
+        message: "Você não pode agenda uma visita com seu proprio pet",
+      });
+      return;
+    }
+    // check if user has already scheduled a visit
+    if (pet.adopter) {
+      if (pet.adopter._id.equals(user._id)) {
+        res.status(404).json({
+          message: "Você já agendou uma visita para este pet!",
+        });
+        return;
       }
     }
+    // add user to pet
+    pet.adopter = {
+      _id: user._id,
+      name: user.name,
+      image: user.image,
+    };
+    await Pet.findByIdAndUpdate(id, pet);
+    res.status(200).json({ message: "Agendamento com sucesso" });
+  }
+
+  static async concludeAdoption(req, res) {
+    const id = req.params.id;
+
+    const pet = await Pet.findById(id);
+    if (!pet) {
+      res.status(404).json({ message: "Pet não existe" });
+    }
+    //checl if user registered the pet
+    const token = getToken(req);
+    const user = await getUserByToken(token);
+    if (pet.user._id.equals(user._id)) {
+      res.status(404).json({
+        message: "Você não pode agenda uma visita com seu proprio pet",
+      });
+      return;
+    }
+    pet.available = false;
+    await Pet.findByIdAndUpdate(id, pet);
+    res
+      .status(200)
+      .json({
+        message: "Parabéns! O cliclo de adoção foi finalizado com sucesso!",
+      });
+  }
 };
