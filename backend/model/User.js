@@ -21,6 +21,7 @@ const User = mongoose.model(
       },
       image: {
         type: String,
+        required: false
       },
       phone: {
         type: String,

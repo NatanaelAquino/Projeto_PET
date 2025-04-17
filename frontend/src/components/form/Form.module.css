@@ -1,8 +1,14 @@
 .form_container{
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
     max-width: 300px;
     margin: 0 auto;
     background-color: #fff;
     border-radius: 15px;
+    
+    
+
 }
 .form_container input[type = 'submit']{
     border-radius: 8px;
@@ -25,4 +31,17 @@
 .form_container p a{
     color: #16479d;
     font-weight: bold;
+}
+
+/*form de pets*/
+
+.preview_pet_images{
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1em;
+}
+.preview_pet_images img{ 
+    width: 100px;
+    height: 100px;
+    margin-left: 1em;
 }

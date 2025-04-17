@@ -126,67 +126,70 @@ module.exports = class UserController {
   static async editUser(req, res) {
     const id = req.params.id;
 
-    // cheack if user exists
+    // Verifica se o ID é válido
+    if (id.length !== 24) {
+      return res.status(400).json({ message: "Usuário não encontrado!" });
+    }
+
+    // Recupera o usuário pelo token
     const token = getToken(req);
     const user = await getUserByToken(token);
 
-    //validations
-    if (req.params.id.length !== 24) {
-      res.status(400).json({ messege: "Usúario não enconstrado!" });
-      return;
-    }
-
+    // Extrai dados do corpo da requisição
     const { name, email, phone, password, confirmpassword } = req.body;
 
-    let image = "";
-    if (req.file){
-      image = req.file.filename 
-    }
+    // Valida campos obrigatórios
     const requiredFields = {
       name: "O nome é obrigatório",
       email: "O email é obrigatório",
-      phone: "O phone é obrigatório",
+      phone: "O telefone é obrigatório",
     };
 
     for (const field in requiredFields) {
       if (!req.body[field]) {
-        res.status(422).json({ message: requiredFields[field] });
-        return;
+        return res.status(422).json({ message: requiredFields[field] });
       }
-      user[field] = req.body[field];
+      user[field] = req.body[field]; // Atualiza os campos do usuário
     }
 
-    if (password != confirmpassword) {
-      res.status(422).json({ messege: "Senha não conferem !" });
-      return;
-    } else if (password === confirmpassword && password != null) {
-      // create a password
-      const salt = await bcrypt.genSalt(12);
-      const passwordHash = await bcrypt.hash(password, salt);
-
-      user.password = passwordHash;
+    // Valida e atualiza a senha, se fornecida
+    if (password && confirmpassword) {
+      if (password !== confirmpassword) {
+        return res.status(422).json({ message: "As senhas não conferem!" });
+      } else {
+        const salt = await bcrypt.genSalt(12);
+        const passwordHash = await bcrypt.hash(password, salt);
+        user.password = passwordHash;
+      }
     }
-    // check if email has already taken
-    const userExists = await User.findOne({ email }); 
-    
+
+    // Verifica se o e-mail já está em uso por outro usuário
+    const userExists = await User.findOne({ email });
     if (userExists && userExists._id.toString() !== user._id.toString()) {
-      res.status(422).json({ message: "E-mail já existe!" });
-      return;
+      return res.status(422).json({ message: "E-mail já está em uso!" });
     }
-    
-    user.email = email; 
 
+    user.email = email;
+
+    // Se houver imagem, atualiza o campo
+    if (req.file) {
+      user.image = req.file.filename;
+    }
+    console.log("Arquivo:", req.file);
+    console.log("Corpo:", req.body);
+    
     try {
       await User.findOneAndUpdate(
         { _id: user._id },
         { $set: user },
         { new: true }
       );
-
-      res.status(200).json({ message: "Usuario Atualizado ! " });
+      console.log("Arquivo:", req.file);
+      console.log("Corpo:", req.body);
+      
+      res.status(200).json({ message: "Usuário atualizado com sucesso!" });
     } catch (error) {
-      res.status(500).josn({ message: error });
-      return;
+      res.status(500).json({ message: error.message });
     }
   }
 };

@@ -27,11 +27,10 @@ module.exports = class PetController {
         return;
       }
     }
-    if (images.length == 0) {
-      res.status(422).json({ message: "A imagem é obrigatório" });
-      return;
+    if (!images || images.length === 0) {
+      return res.status(422).json({ message: "A imagem é obrigatória" });
     }
-
+    
     const pet = new Pet({
       name,
       age,
@@ -129,8 +128,8 @@ module.exports = class PetController {
 
     const { name, age, weigth, color, available } = req.body;
 
+    console.log(req.body)
     const images = req.files;
-
     const updatedData = {};
 
     // check if pet exists
@@ -165,12 +164,10 @@ module.exports = class PetController {
         res.status(422).json({ message: requiredFields[field] });
         return;
       }
-      updatedData[field] = [field];
+      updatedData[field] = req.body[field];
     }
-    if (images.length == 0) {
-      res.status(422).json({ message: "A imagem é obrigatório" });
-      return;
-    } else {
+
+    if (images.length > 0 ) {
       updatedData.images = [];
       images.map((image) => {
         updatedData.images.push(image.filename);
@@ -230,18 +227,17 @@ module.exports = class PetController {
     //checl if user registered the pet
     const token = getToken(req);
     const user = await getUserByToken(token);
-    if (pet.user._id.equals(user._id)) {
+
+    if (!pet.user._id.equals(user._id)) {
       res.status(404).json({
-        message: "Você não pode agenda uma visita com seu proprio pet",
+        message: "Você não pode concluir um pet que não é seu",
       });
       return;
     }
     pet.available = false;
     await Pet.findByIdAndUpdate(id, pet);
-    res
-      .status(200)
-      .json({
-        message: "Parabéns! O cliclo de adoção foi finalizado com sucesso!",
-      });
+    res.status(200).json({
+      message: "Parabéns! O cliclo de adoção foi finalizado com sucesso!",
+    });
   }
 };
